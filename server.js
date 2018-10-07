@@ -1,24 +1,10 @@
-var http = require('http');
-var port = 1337;
-var ip = "127.0.0.1";
-var server = new http.Server();
+var express = require('express');
+var app = express();
 
-server.listen(port, ip );
-
-
-server.on('request', function (req, resp) {
-   
-    
-
-    function responseBlockOut(req) {
-
-        
-            var strToResponse = "Any request will return entered url ardress.\nYou entered: " + req.url;
-            return strToResponse;
-        }
-    
-        
-        resp.end(responseBlockOut(req));
+app.get('/', function (req, res) {
+  res.send('Hello World!');
 });
 
-console.log("server is running on port: " + port + " on ip: " + ip)
+app.listen(3000, function () {
+  console.log('Example app listening on port 3000!');
+});
