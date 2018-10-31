@@ -15,11 +15,8 @@ let UserSchema = new mongoose.Schema ({
       password: {
         type: String,
         required: true,
-      },
-      passwordConf: {
-        type: String,
-        required: true,
       }
+      
 });
 
 let User = mongoose.model('User', UserSchema);

@@ -15,8 +15,6 @@ db.once('open', function() {
   console.log("we are connected to DB!")
 });
 
-
-
 app.listen(3000, function () {
   console.log('Example app listening on port 3000!');
 });
@@ -30,21 +28,16 @@ app.post('/', function (req, res) {
    emailCorrect = false,
    userNameAndEmailAreFree = false,
    passwConf = false;
-  if (emailValidate(postedForm.email)) {
-    emailCorrect = true;
-  } else {
-    emailCorrect = false;
-  };
-  if (postedForm.password === postedForm.passwordConf) {
-    passwConf = true;
-  } else {
-    passwConf  = false;
-  };
-  if (User.find({ username: postedForm.username }) || User.find({ email: postedForm.email })) {
-    userNameAndEmailAreFree = false;
-  } else {
-    userNameAndEmailAreFree = true;
-  }
+
+  emailValidate(postedForm.email) ? emailCorrect = true : emailCorrect = false;
+  // console.log(postedForm.email + ' ' + emailCorrect);
+  postedForm.password === postedForm.passwordConf ? passwConf = true : passwConf  = false;
+  // console.log(postedForm.password + ' ' + passwConf);
+  User.find({ username: postedForm.username }) || User.find({ email: postedForm.email }) ? userNameAndEmailAreFree = true : userNameAndEmailAreFree = false;
+  // console.log(User.find({ username: postedForm.username }) == true);
+  // console.log(User.find({ username: postedForm.email }) == true);
+  // console.log(userNameAndEmailAreFree);
+  
   if (emailCorrect && userNameAndEmailAreFree && passwConf) {
     let submitteduser = new User ({
       email: postedForm.email,
