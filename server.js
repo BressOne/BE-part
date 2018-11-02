@@ -23,62 +23,48 @@ app.get('/', function (req, res) {
   res.sendFile(__dirname + '/simplehtml.html');
 });
 
-app.post('/', function (req, res) {
+app.post('/register', function (req, res) {
   let postedForm = req.body,
    emailCorrect = false,
-   userNameAndEmailAreFree = false,
    passwConf = false;
+   usernameIsFree = false;
+   emailIsFree = false;
+   passIsEmpty = true;
 
   emailValidate(postedForm.email) ? emailCorrect = true : emailCorrect = false;
-  // console.log(postedForm.email + ' ' + emailCorrect);
   postedForm.password === postedForm.passwordConf ? passwConf = true : passwConf  = false;
-  // console.log(postedForm.password + ' ' + passwConf);
-  User.find({ username: postedForm.username }) || User.find({ email: postedForm.email }) ? userNameAndEmailAreFree = true : userNameAndEmailAreFree = false;
-  // console.log(User.find({ username: postedForm.username }) == true);
-  // console.log(User.find({ username: postedForm.email }) == true);
-  // console.log(userNameAndEmailAreFree);
-  
-  if (emailCorrect && userNameAndEmailAreFree && passwConf) {
+  postedForm.password === "" ? passIsEmpty = true : passIsEmpty = false;
+
+  if (emailCorrect &&  passwConf && !passIsEmpty) {
     let submitteduser = new User ({
       email: postedForm.email,
       username: postedForm.username,
       password: postedForm.password
     });
     submitteduser.save(function (err) {
-      if (err) return console.error(err);
+      if (err) 
+      {
+        res.end('Seems like email or username is currently in use!');    
+        
+      } else {
+        res.end('Successfully saved!');
+      };
       });
-    res.end('Successfully saved!');
+    
   } else {
-    res.end('Some kind of err');
+    let resultError = "";
+    if (!emailCorrect) {
+      resultError = resultError + "Keep yourself together! Your e-mail is incorrect\n"
+    }
+    if (!passwConf) {
+      resultError = resultError + "Keep up! Your passwords are not same!\n"
+    }
+    if (passIsEmpty) {
+      resultError = resultError + "You are easy victim! Your password is empty!\n"
+    }
+    
+    res.end(resultError);
   }
 }); 
 
-
-
-/* var testSchema = new Schema({
-  name: String
-});
-
-testSchema.methods.naming = function () {
-  var greeting = this.name
-    ? "Name is " + this.name
-    : "I don't have a name";
-  console.log(greeting);
-};
-
-var Test = mongoose.model('Someone', testSchema);
-
-var someMan = new Test({ name: 'man' });
-someMan.naming();
-
-someMan.save(function (err, someMan) {
-  if (err) return console.error(err);
-  someMan.naming();
-});
-
-Test.find(function (err, someones) {
-  if (err) return console.error(err);
-  console.log(someones);
-});
-
-Test.find({ name: /^an/ }); */
+app.post(

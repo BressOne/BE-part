@@ -12,12 +12,25 @@
         <link rel="stylesheet" href="">
     </head>
     <body>
-        <form action='/' method="POST">
-        <br> email <br> <input type="text" name="email"><br>
-        <br> username <br> <input type="text" name="username"><br>
-        <br> password <br> <input type="text" name="password"><br>
-        <br> passwordConf <br> <input type="text" name="passwordConf"><br>
-        <input type="submit">
-        </form>
+            <form action='/register' method="POST">
+                <fieldset>
+                        <legend>Create account</legend>
+                        <p><label for="email">email <em>*</em> </label><input type="email" id="email" name="email"></p>
+                        <p><label for="username">username <em>*</em> </label><input type="text" id="username" name="username"></p>
+                        <p><label for="password">password <em>*</em> </label><input type="text" id="password" name="password"></p>
+                        <p><label for="passwordConf">passwordConf <em>*</em> </label><input type="text" id="passwordConf" name="passwordConf"></p>
+                </fieldset>
+                <p><input type="submit" value="Register"></p>
+            </form>
+
+            <form action='/login' method="POST">
+                <fieldset>
+                        <legend>login</legend>
+                        <p><label for="username">username</label><input type="text" id="username" name="username"></p>
+                        <p><label for="password">password</label><input type="text" id="password" name="password"></p>
+                        </fieldset>
+                <p><input type="submit" value="login"></p>
+            </form>
+                
     </body>
 </html>
