@@ -23,14 +23,13 @@ app.get('/', function (req, res) {
   res.sendFile(__dirname + '/simplehtml.html');
 });
 
-app.post('/register', function (req, res) {
+app.post('/', function (req, res) {
   let postedForm = req.body,
-   emailCorrect = false,
-   passwConf = false;
-   usernameIsFree = false;
-   emailIsFree = false;
-   passIsEmpty = true;
-
+    emailCorrect = false,
+    passwConf = false;
+    usernameIsFree = false;
+    emailIsFree = false;
+    passIsEmpty = true;
   emailValidate(postedForm.email) ? emailCorrect = true : emailCorrect = false;
   postedForm.password === postedForm.passwordConf ? passwConf = true : passwConf  = false;
   postedForm.password === "" ? passIsEmpty = true : passIsEmpty = false;
@@ -67,4 +66,3 @@ app.post('/register', function (req, res) {
   }
 }); 
 
-app.post(
