@@ -1,4 +1,5 @@
 let mongoose = require('mongoose');
+let crypto = require('crypto');
 let UserSchema = new mongoose.Schema ({
     email: {
         type: String,

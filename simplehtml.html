@@ -21,8 +21,6 @@
                     "password": document.getElementById('password').value,
                     "passwordConf": document.getElementById('passwordConf').value,
                 };
-            var data = new FormData();
-            data.append( "json", JSON.stringify( payload ) );
             console.log(payload);
             fetch('/', {
                 method: 'post',
@@ -30,7 +28,7 @@
                     'Accept': 'application/json',
                     'Content-Type': 'application/json'
                 },
-                body: data,
+                body: (payload),
                 }).then(function(response) {
                     document.getElementById('responseRegister').innerText = response.message;
                 }).catch(function(err) {

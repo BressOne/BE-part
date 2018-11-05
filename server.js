@@ -30,6 +30,8 @@ app.post('/', function (req, res) {
     usernameIsFree = false;
     emailIsFree = false;
     passIsEmpty = true;
+    console.log(req);
+    console.log(postedForm);
   emailValidate(postedForm.email) ? emailCorrect = true : emailCorrect = false;
   postedForm.password === postedForm.passwordConf ? passwConf = true : passwConf  = false;
   postedForm.password === "" ? passIsEmpty = true : passIsEmpty = false;
