@@ -13,7 +13,26 @@
     </head>
     <body>
         <script>
-            
+        function loginFetch(){
+            let payload = {
+                    
+                    "login-username": document.getElementById('username').value,
+                    "login-password": document.getElementById('password').value,
+                    
+                };
+        fetch('http://localhost:3000/', {
+                method: 'post',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload),
+                }).then(function(response) {
+                    document.getElementById('responseRegister').innerText = response.message;
+                }).catch(function(err) {
+                    document.getElementById('responseRegister').innerText = err.message;
+                });
+            };    
         function registerFetch(){
             let payload = {
                     "email": document.getElementById('email').value,
@@ -22,13 +41,13 @@
                     "passwordConf": document.getElementById('passwordConf').value,
                 };
             console.log(payload);
-            fetch('/', {
+            fetch('http://localhost:3000/register', {
                 method: 'post',
                 headers: {
                     'Accept': 'application/json',
                     'Content-Type': 'application/json'
                 },
-                body: (payload),
+                body: JSON.stringify(payload),
                 }).then(function(response) {
                     document.getElementById('responseRegister').innerText = response.message;
                 }).catch(function(err) {
@@ -51,8 +70,8 @@
             <form action='/login' onsubmit="loginFetch()">
                 <fieldset>
                         <legend>login</legend>
-                        <p><label for="username">username</label><input type="text" id="username" name="username"></p>
-                        <p><label for="password">password</label><input type="text" id="password" name="password"></p>
+                        <p><label for="username">username</label><input type="text" id="login-username" name="username"></p>
+                        <p><label for="password">password</label><input type="text" id="login-password" name="password"></p>
                         </fieldset>
                 <p><input type="submit" value="login"></p>
             </form>
