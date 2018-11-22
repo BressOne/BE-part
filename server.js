@@ -12,10 +12,12 @@ app.use(cors());
 app.options("*", cors());
 app.use(function(req, res, next) {
   res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Origin, X-Requested-With, Content-Type, Accept"
+  );
   next();
 });
-
 
 mongoose.connect(
   "mongodb://localhost/test",
@@ -59,12 +61,10 @@ app.post("/register", cors(), function(req, res) {
     submitteduser.save(function(err) {
       if (err) {
         res.json({
-          "message": "Seems like email or username is currently in use!"
+          message: "Seems like email or username is currently in use!"
         });
-        console.log(res.json);
       } else {
-        res.json({ "message": "Successfully saved!" });
-        console.log(res.json);
+        res.json({ message: "Successfully saved!" });
       }
     });
   } else {
@@ -74,37 +74,39 @@ app.post("/register", cors(), function(req, res) {
         resultError + "Keep yourself together! Your e-mail is incorrect\n";
     }
     if (!passwConf) {
-      resultError = resultError + "Keep up! Your passwords are not same!\n";
+      resultError = resultError + "Keep up! Passwords missmatch!\n";
     }
     if (passIsEmpty) {
       resultError =
         resultError + "You are easy victim! Your password is empty!\n";
     }
 
-    res.json({ "message": resultError });
+    res.json({ message: resultError });
   }
 });
 
 app.post("/login", function(req, res) {
   let postedForm = req.body;
   console.log(req.body);
-  User.findOne({ 'username': postedForm.loginusername }, function(err, user) {
+  User.findOne({ username: postedForm.loginusername }, function(err, user) {
     console.log(user);
     if (user) {
       if (user.checkPassword(postedForm.loginpassword)) {
-        res.status(200).json({ message: "Access granted",
-      loginPermission: true });
+        res.status(200).json({
+          message: "Access granted",
+          loginPermission: true
+        });
       } else {
-        res
-          .status(200)
-          .json({ message: "Wrong username or pass.",
-          loginPermission: false });
+        res.status(200).json({
+          message: "Wrong username or pass.",
+          loginPermission: false
+        });
       }
     } else {
-      res
-        .status(200)
-        .json({ message: "Wrong username or pass.",
-        loginPermission: false});
+      res.status(200).json({
+        message: "Wrong username or pass.",
+        loginPermission: false
+      });
     }
   });
 });
