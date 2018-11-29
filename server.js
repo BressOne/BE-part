@@ -10,7 +10,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(cors());
 app.options("*", cors());
-app.use(function(req, res, next) {
+app.use(function (req, res, next) {
   res.header("Access-Control-Allow-Origin", "*");
   res.header(
     "Access-Control-Allow-Headers",
@@ -25,19 +25,19 @@ mongoose.connect(
 );
 let db = mongoose.connection;
 db.on("error", console.error.bind(console, "connection error:"));
-db.once("open", function() {
+db.once("open", function () {
   console.log("we are connected to DB!");
 });
 
-app.listen(3000, function() {
+app.listen(3000, function () {
   console.log("Example app listening on port 3000!");
 });
 
-app.get("/", function(req, res) {
+app.get("/", function (req, res) {
   res.sendFile(__dirname + "/simplehtml.html");
 });
 
-app.post("/register", cors(), function(req, res) {
+app.post("/register", cors(), function (req, res) {
   let postedForm = req.body,
     emailCorrect = false,
     passwConf = false;
@@ -58,7 +58,7 @@ app.post("/register", cors(), function(req, res) {
       username: postedForm.username,
       password: postedForm.password
     });
-    submitteduser.save(function(err) {
+    submitteduser.save(function (err) {
       if (err) {
         res.json({
           message: "Seems like email or username is currently in use!"
@@ -85,10 +85,10 @@ app.post("/register", cors(), function(req, res) {
   }
 });
 
-app.post("/login", function(req, res) {
+app.post("/login", function (req, res) {
   let postedForm = req.body;
   console.log(req.body);
-  User.findOne({ username: postedForm.loginusername }, function(err, user) {
+  User.findOne({ username: postedForm.loginusername }, function (err, user) {
     console.log(user);
     if (user) {
       if (user.checkPassword(postedForm.loginpassword)) {
@@ -108,5 +108,25 @@ app.post("/login", function(req, res) {
         loginPermission: false
       });
     }
+  });
+});
+
+app.post("/search_person", function (req, res) {
+  console.log(req);
+
+  console.log(req.body.searchValue);
+  const pattern = req.body.searchValue;
+  console.log(pattern);
+  User.find({ username: { $regex: `${pattern}`, $options: 'i' } }, function (err, users) {
+    console.log(users);
+    let resultList = [];
+    for (let index = 0; index < users.length; index++) {
+      resultList.push(users[index].username)
+
+    }
+    console.log(resultList);
+    res.status(200).json({
+      resultList
+    });
   });
 });
