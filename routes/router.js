@@ -8,6 +8,17 @@ let cors = require("cors");
 router.use(bodyParser.urlencoded({ extended: true }));
 router.use(bodyParser.json());
 
+let requiresLogin = function(req, res, next) {
+  if (!req.session.userId) {
+    let jsonResponse = {
+      message: "Wrong username or pass.",
+      loginPermission: false
+    };
+    next(jsonResponse);
+  }
+  return next();
+};
+
 let corsOptions = {
   origin: true,
   credentials: true,
@@ -16,7 +27,63 @@ let corsOptions = {
   optionsSuccessStatus: 204
 };
 router.use(cors(corsOptions));
+
 router.options("*", cors(corsOptions));
+
+router.use(function(req, res, next) {
+  console.log(req.url);
+  if (
+    req.url === "/login" ||
+    req.url === "/register" ||
+    req.method === "OPTIONS"
+  ) {
+    console.log("not restricted area request");
+    return next();
+  } else {
+    console.log("restricted area request");
+    console.log(req.session.userId);
+
+    User.findById(req.session.userId).exec(function(error, user) {
+      console.log(user);
+      if (req.url === "") {
+        console.log("blank url");
+        res.sendStatus(400);
+        res.end();
+        return;
+      } else {
+        if (user === null) {
+          res.sendStatus(401);
+          res.end();
+          return;
+        } else {
+          return next();
+        }
+      }
+    });
+  }
+});
+
+router.get("/profile", function(req, res, next) {
+  User.findById(req.session.userId).exec(function(error, user) {
+    if (error) {
+      return next(error);
+    } else {
+      if (user === null) {
+        var err = new Error("Not authorized! Go back!");
+        err.status = 400;
+        return next(err);
+      } else {
+        return res.send(
+          "<h1>Name: </h1>" +
+            user.username +
+            "<h2>Mail: </h2>" +
+            user.email +
+            '<br><a type="button" href="/logout">Logout</a>'
+        );
+      }
+    }
+  });
+});
 
 router.post("/register", function(req, res) {
   console.log(req.body);
@@ -67,7 +134,6 @@ router.post("/register", function(req, res) {
 });
 
 router.post("/login", function(req, res) {
-  console.log(req.body);
   let postedForm = req.body;
   User.authenticate(postedForm.username, postedForm.password, function(
     error,
@@ -79,9 +145,7 @@ router.post("/login", function(req, res) {
         loginPermission: false
       });
     } else {
-      console.log(user._id);
       req.session.userId = user._id;
-      console.log(req);
       res.status(200).json({
         message: "Access granted",
         loginPermission: true
@@ -91,21 +155,16 @@ router.post("/login", function(req, res) {
 });
 
 router.post("/search_person", function(req, res) {
-  console.log(req);
-  console.log(req.body.searchValue);
   const pattern = req.body.searchValue;
-  console.log(pattern);
   User.find({ username: { $regex: `${pattern}`, $options: "i" } }, function(
     err,
     users
   ) {
-    console.log(users);
     let resultList = [];
     for (let index = 0; index < users.length; index++) {
       resultList.push(users[index].username);
     }
-    console.log(resultList);
-    res.status(200).json({
+    res.json({
       resultList
     });
   });
