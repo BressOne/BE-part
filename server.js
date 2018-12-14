@@ -3,8 +3,8 @@ let app = express();
 let bodyParser = require("body-parser");
 let mongoose = require("mongoose");
 let session = require("express-session");
-let MongoStore = require("connect-mongo")(session);
-
+// let MongoStore = require("connect-mongo")(session);
+// mongoose.Promise = global.Promise;
 //connect to MongoDB
 mongoose.connect("mongodb://localhost/whatever_DB");
 let db = mongoose.connection;

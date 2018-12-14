@@ -20,6 +20,10 @@ let UserSchema = new mongoose.Schema({
   salt: {
     type: String,
     required: true
+  },
+  contacts: {
+    type: Array,
+    required: false
   }
 });
 

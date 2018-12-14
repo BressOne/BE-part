@@ -8,17 +8,6 @@ let cors = require("cors");
 router.use(bodyParser.urlencoded({ extended: true }));
 router.use(bodyParser.json());
 
-let requiresLogin = function(req, res, next) {
-  if (!req.session.userId) {
-    let jsonResponse = {
-      message: "Wrong username or pass.",
-      loginPermission: false
-    };
-    next(jsonResponse);
-  }
-  return next();
-};
-
 let corsOptions = {
   origin: true,
   credentials: true,
@@ -44,7 +33,6 @@ router.use(function(req, res, next) {
     console.log(req.session.userId);
 
     User.findById(req.session.userId).exec(function(error, user) {
-      console.log(user);
       if (req.url === "") {
         console.log("blank url");
         res.sendStatus(400);
@@ -61,28 +49,6 @@ router.use(function(req, res, next) {
       }
     });
   }
-});
-
-router.get("/profile", function(req, res, next) {
-  User.findById(req.session.userId).exec(function(error, user) {
-    if (error) {
-      return next(error);
-    } else {
-      if (user === null) {
-        var err = new Error("Not authorized! Go back!");
-        err.status = 400;
-        return next(err);
-      } else {
-        return res.send(
-          "<h1>Name: </h1>" +
-            user.username +
-            "<h2>Mail: </h2>" +
-            user.email +
-            '<br><a type="button" href="/logout">Logout</a>'
-        );
-      }
-    }
-  });
 });
 
 router.post("/register", function(req, res) {
@@ -160,10 +126,15 @@ router.post("/search_person", function(req, res) {
     err,
     users
   ) {
-    let resultList = [];
-    for (let index = 0; index < users.length; index++) {
-      resultList.push(users[index].username);
-    }
+    let resultList = users.map(function(user) {
+      if (user._id == req.session.userId) {
+      } else {
+        return user.username;
+      }
+    });
+    resultList = resultList.filter(function(el) {
+      return el !== undefined;
+    });
     res.json({
       resultList
     });
@@ -183,5 +154,103 @@ router.get("/logout", function(req, res, next) {
     });
   }
 });
+
+router.post("/addContact", function(req, res, next) {
+  let newContactID = "",
+    currentContactList = "";
+
+  Promise.all([
+    User.findOne({ username: req.body.username })
+      .then(user => {
+        return user._id;
+      })
+      .catch(err => {
+        console.log(err);
+      }),
+    User.findOne({ _id: req.session.userId })
+      .then(user => {
+        return user.contacts;
+      })
+      .catch(err => {
+        console.log(err);
+      })
+  ]).then(results => {
+    newContactID = results[0];
+    currentContactList = results[1];
+    if (newContactID == req.session.userId) {
+      res.sendStatus(400);
+      res.end();
+    } else {
+      if (currentContactList.indexOf(newContactID) === -1) {
+        User.updateOne(
+          { _id: req.session.userId },
+          { $push: { contacts: newContactID } }
+        )
+
+          .then(
+            res.json({
+              message: "added successfully"
+            })
+          )
+          .catch(err => console.log(err));
+      } else {
+        console.log("tryna add contact that is already in list!");
+        res.sendStatus(400);
+        res.end();
+      }
+    }
+  });
+});
+
+router.get("/getContacts", function(req, res) {
+  User.findById(req.session.userId)
+    .exec(function(error, user) {
+      console.log(user.username);
+      console.log(user.contacts);
+      let promise = user.contacts.map(function(id) {
+        return User.findById(id)
+          .exec()
+          .then(user => {
+            console.log(user.username);
+            return user.username;
+          })
+          .then(result => {
+            console.log(result);
+          });
+      });
+      console.log(promise);
+      return promise;
+    })
+    .then(promise =>
+      res.json({
+        promise
+      })
+    );
+});
+
+// User.findOne({ _id: req.session.userId })
+//   .then(user => {
+//     console.log(user._id);
+//     return user.contacts;
+//   })
+//   .then(contactsIDs => {
+//     console.log(contactsIDs);
+//     return contactsIDs.map(function(ID) {
+//       User.findOne({ _id: ID }).then(user => {
+//         console.log(user.username);
+//         return user.username;
+//       });
+//     });
+//   })
+//   .then(array => {
+//     console.log(array); //got array of undefined values in each position
+//     res.json({
+//       array
+//     });
+//   })
+//   .catch(err => {
+//     console.log(err);
+//   });
+// });
 
 module.exports = router;
