@@ -203,54 +203,24 @@ router.post("/addContact", function(req, res, next) {
 });
 
 router.get("/getContacts", function(req, res) {
-  User.findById(req.session.userId)
-    .exec(function(error, user) {
-      console.log(user.username);
-      console.log(user.contacts);
-      let promise = user.contacts.map(function(id) {
-        return User.findById(id)
-          .exec()
-          .then(user => {
-            console.log(user.username);
-            return user.username;
-          })
-          .then(result => {
-            console.log(result);
-          });
-      });
-      console.log(promise);
-      return promise;
-    })
-    .then(promise =>
-      res.json({
-        promise
+  User.findById(req.session.userId).exec((err, user) => {
+    let promiseArray = user.contacts.map(function(id) {
+      return User.findById(id)
+        .exec()
+        .then(user => {
+          console.log(user.username);
+          return user.username;
+        })
+        .catch(err => console.log(err));
+    });
+    return Promise.all(promiseArray)
+      .then(array => {
+        console.log(array);
+        res.json(array);
+        return array;
       })
-    );
+      .catch(err => consolelog(err));
+  });
 });
-
-// User.findOne({ _id: req.session.userId })
-//   .then(user => {
-//     console.log(user._id);
-//     return user.contacts;
-//   })
-//   .then(contactsIDs => {
-//     console.log(contactsIDs);
-//     return contactsIDs.map(function(ID) {
-//       User.findOne({ _id: ID }).then(user => {
-//         console.log(user.username);
-//         return user.username;
-//       });
-//     });
-//   })
-//   .then(array => {
-//     console.log(array); //got array of undefined values in each position
-//     res.json({
-//       array
-//     });
-//   })
-//   .catch(err => {
-//     console.log(err);
-//   });
-// });
 
 module.exports = router;
