@@ -4,6 +4,7 @@ let emailValidate = require("../modules/emailvalidate.js");
 let express = require("express");
 let router = express.Router();
 let User = require("../schemas/userSchema.js");
+let Dialogue = require("../schemas/dialogueSchema.js");
 let cors = require("cors");
 router.use(bodyParser.urlencoded({ extended: true }));
 router.use(bodyParser.json());
@@ -20,21 +21,15 @@ router.use(cors(corsOptions));
 router.options("*", cors(corsOptions));
 
 router.use(function(req, res, next) {
-  console.log(req.url);
   if (
     req.url === "/login" ||
     req.url === "/register" ||
     req.method === "OPTIONS"
   ) {
-    console.log("not restricted area request");
     return next();
   } else {
-    console.log("restricted area request");
-    console.log(req.session.userId);
-
     User.findById(req.session.userId).exec(function(error, user) {
       if (req.url === "") {
-        console.log("blank url");
         res.sendStatus(400);
         res.end();
         return;
@@ -51,8 +46,8 @@ router.use(function(req, res, next) {
   }
 });
 
+//poster fo registering new user
 router.post("/register", function(req, res) {
-  console.log(req.body);
   let postedForm = req.body,
     emailCorrect = false,
     passwConf = false;
@@ -99,6 +94,7 @@ router.post("/register", function(req, res) {
   }
 });
 
+//poster for login
 router.post("/login", function(req, res) {
   let postedForm = req.body;
   User.authenticate(postedForm.username, postedForm.password, function(
@@ -120,6 +116,7 @@ router.post("/login", function(req, res) {
   });
 });
 
+// poster for search result of contacts
 router.post("/search_person", function(req, res) {
   const pattern = req.body.searchValue;
   User.find({ username: { $regex: `${pattern}`, $options: "i" } }, function(
@@ -141,7 +138,7 @@ router.post("/search_person", function(req, res) {
   });
 });
 
-// GET for logout logout
+// GET for logout
 router.get("/logout", function(req, res, next) {
   if (req.session) {
     // delete session object
@@ -155,6 +152,7 @@ router.get("/logout", function(req, res, next) {
   }
 });
 
+// post for contact adding to contacts
 router.post("/addContact", function(req, res, next) {
   let newContactID = "",
     currentContactList = "";
@@ -194,7 +192,6 @@ router.post("/addContact", function(req, res, next) {
           )
           .catch(err => console.log(err));
       } else {
-        console.log("tryna add contact that is already in list!");
         res.sendStatus(400);
         res.end();
       }
@@ -202,25 +199,162 @@ router.post("/addContact", function(req, res, next) {
   });
 });
 
+// delete for contact removing to contacts
+router.delete("/deleteContact", function(req, res, next) {
+  User.findById(req.session.userId)
+    .exec()
+    .then(user => {
+      let contacts = user.contacts;
+      let deleteUser = "";
+      User.findOne({ username: req.body.username })
+        .exec()
+        .then(user => {
+          deleteUser = user;
+          if (contacts.indexOf(deleteUser._id) === -1) {
+            res.sendStatus(400);
+            res.end();
+          } else {
+            User.updateOne(
+              { _id: req.session.userId },
+              { $pull: { contacts: deleteUser._id } }
+            )
+              .exec()
+              .then(
+                res.json({
+                  message: "removed successfully"
+                })
+              );
+          }
+        })
+        .catch(err => {
+          console.log(err);
+        });
+    })
+    .catch(err => {
+      console.log(err);
+    });
+});
+
+// getter for contact list
 router.get("/getContacts", function(req, res) {
   User.findById(req.session.userId).exec((err, user) => {
     let promiseArray = user.contacts.map(function(id) {
       return User.findById(id)
         .exec()
         .then(user => {
-          console.log(user.username);
           return user.username;
         })
         .catch(err => console.log(err));
     });
     return Promise.all(promiseArray)
       .then(array => {
-        console.log(array);
         res.json(array);
         return array;
       })
       .catch(err => consolelog(err));
   });
+});
+
+// getter for dialogue messages list
+router.get("/getDialogueMessages", function(req, res) {
+  let visavee = {};
+  User.findById(req.session.userId)
+    .exec((err, user) => {
+      reqUser = user;
+      visavee = User.findOne({ username: req.body.username })
+        .exec()
+        .then(user => {
+          return user;
+        });
+      return user;
+    })
+    .then(user => {
+      if (user.contacts.indexOf(visavee._id) !== -1) {
+        Dialogue.findOne({
+          $or: [
+            {
+              $and: [
+                { userIDs: { first: visavee._id } },
+                { userIDs: { second: user._id } }
+              ]
+            },
+            {
+              $and: [
+                { userIDs: { first: user._id } },
+                { userIDs: { second: visavee._id } }
+              ]
+            }
+          ]
+        })
+          .exec()
+          .then(dialogue => {
+            Promise.all(
+              dialogue.messages.map(function(message) {
+                let senderUserName = "";
+                message.senderID === user._id
+                  ? (senderUserName = user.username)
+                  : (senderUserName = visavee.username);
+                delete message.senderID;
+                message.sentBy = senderUserName;
+              })
+            ).then(result => {
+              res.json(result);
+            });
+          });
+      } else {
+        res.status(400);
+        res.end();
+      }
+    });
+});
+
+router.post("/postMessage", function(req, res) {
+  let visavee = {};
+  User.findOne({ username: req.toUsername })
+    .exec()
+    .then(user => {
+      visavee = user;
+    })
+    .then(
+      Dialogue.findOne({
+        $or: [
+          {
+            $and: [
+              { userIDs: { first: visavee._id } },
+              { userIDs: { second: req.session.userId } }
+            ]
+          },
+          {
+            $and: [
+              { userIDs: { first: req.session.userId } },
+              { userIDs: { second: visavee._id } }
+            ]
+          }
+        ]
+      })
+        .exec()
+        .then(dialogue => {
+          let message = {
+            senderID: req.session.userId,
+            content: req.message,
+            dateTime: Date(Date.now())
+          };
+          Dialogue.updateOne(
+            { _id: dialogue._id },
+            { $push: { messages: message } }
+          )
+            .exec()
+            .then(
+              res.json({
+                message: "sent success"
+              })
+            )
+            .catch(err => {
+              res.status(400);
+              res.end();
+            });
+        })
+    );
 });
 
 module.exports = router;
