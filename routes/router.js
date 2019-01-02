@@ -1,6 +1,6 @@
 let bodyParser = require("body-parser");
 let emailValidate = require("../modules/emailvalidate.js");
-
+let session = require("express-session");
 let express = require("express");
 let router = express.Router();
 let User = require("../schemas/userSchema.js");
@@ -8,6 +8,14 @@ let Dialogue = require("../schemas/dialogueSchema.js");
 let cors = require("cors");
 router.use(bodyParser.urlencoded({ extended: true }));
 router.use(bodyParser.json());
+
+router.use(
+  session({
+    secret: "work hard",
+    resave: true,
+    saveUninitialized: false
+  })
+);
 
 let corsOptions = {
   origin: true,
@@ -20,7 +28,7 @@ router.use(cors(corsOptions));
 
 router.options("*", cors(corsOptions));
 
-router.use(function(req, res, next) {
+router.use((req, res, next) => {
   if (
     req.url === "/login" ||
     req.url === "/register" ||
@@ -28,7 +36,7 @@ router.use(function(req, res, next) {
   ) {
     return next();
   } else {
-    User.findById(req.session.userId).exec(function(error, user) {
+    User.findById(req.session.userId).exec((error, user) => {
       if (req.url === "") {
         res.sendStatus(400);
         res.end();
@@ -46,20 +54,16 @@ router.use(function(req, res, next) {
   }
 });
 
-//poster fo registering new user
-router.post("/register", function(req, res) {
+router.post("/register", (req, res) => {
   let postedForm = req.body,
     emailCorrect = false,
     passwConf = false;
   emailIsFree = false;
   passIsEmpty = true;
-  emailValidate(postedForm.email)
-    ? (emailCorrect = true)
-    : (emailCorrect = false);
-  postedForm.password === postedForm.passwordConf
-    ? (passwConf = true)
-    : (passwConf = false);
-  postedForm.password === "" ? (passIsEmpty = true) : (passIsEmpty = false);
+
+  emailCorrect = emailValidate(postedForm.email);
+  passwConf = postedForm.password === postedForm.passwordConf;
+  passIsEmpty = postedForm.password === "";
 
   if (emailCorrect && passwConf && !passIsEmpty) {
     let submitteduser = new User({
@@ -67,7 +71,7 @@ router.post("/register", function(req, res) {
       username: postedForm.username,
       password: postedForm.password
     });
-    submitteduser.save(function(err) {
+    submitteduser.save(err => {
       if (err) {
         res.json({
           message: "Seems like email or username is currently in use!"
@@ -94,13 +98,9 @@ router.post("/register", function(req, res) {
   }
 });
 
-//poster for login
-router.post("/login", function(req, res) {
+router.post("/login", (req, res) => {
   let postedForm = req.body;
-  User.authenticate(postedForm.username, postedForm.password, function(
-    error,
-    user
-  ) {
+  User.authenticate(postedForm.username, postedForm.password, (error, user) => {
     if (error || !user) {
       res.status(200).json({
         message: "Wrong username or pass.",
@@ -116,44 +116,40 @@ router.post("/login", function(req, res) {
   });
 });
 
-// poster for search result of contacts
-router.post("/search_person", function(req, res) {
+router.post("/search_person", (req, res) => {
   const pattern = req.body.searchValue;
-  User.find({ username: { $regex: `${pattern}`, $options: "i" } }, function(
-    err,
-    users
-  ) {
-    let resultList = users.map(function(user) {
-      if (user._id == req.session.userId) {
-      } else {
-        return user.username;
-      }
-    });
-    resultList = resultList.filter(function(el) {
-      return el !== undefined;
-    });
-    res.json({
-      resultList
-    });
-  });
+  User.find(
+    { username: { $regex: `${pattern}`, $options: "i" } },
+    (err, users) => {
+      let resultList = users.map(user => {
+        if (user._id == req.session.userId) {
+        } else {
+          return user.username;
+        }
+      });
+      resultList = resultList.filter(el => {
+        return el !== undefined;
+      });
+      res.json({
+        resultList
+      });
+    }
+  );
 });
 
-// GET for logout
-router.get("/logout", function(req, res, next) {
+router.get("/logout", (req, res, next) => {
   if (req.session) {
-    // delete session object
-    req.session.destroy(function(err) {
+    req.session.destroy(err => {
       if (err) {
         return next(err);
       } else {
-        return res.redirect("/");
+        return res.json("loggedOut");
       }
     });
   }
 });
 
-// post for contact adding to contacts
-router.post("/addContact", function(req, res, next) {
+router.post("/addContact", (req, res, next) => {
   let newContactID = "",
     currentContactList = "";
 
@@ -199,8 +195,7 @@ router.post("/addContact", function(req, res, next) {
   });
 });
 
-// delete for contact removing to contacts
-router.delete("/deleteContact", function(req, res, next) {
+router.delete("/deleteContact", (req, res, next) => {
   User.findById(req.session.userId)
     .exec()
     .then(user => {
@@ -235,10 +230,9 @@ router.delete("/deleteContact", function(req, res, next) {
     });
 });
 
-// getter for contact list
-router.get("/getContacts", function(req, res) {
+router.get("/getContacts", (req, res) => {
   User.findById(req.session.userId).exec((err, user) => {
-    let promiseArray = user.contacts.map(function(id) {
+    let promiseArray = user.contacts.map(id => {
       return User.findById(id)
         .exec()
         .then(user => {
@@ -255,60 +249,73 @@ router.get("/getContacts", function(req, res) {
   });
 });
 
-// getter for dialogue messages list
-router.get("/getDialogueMessages", function(req, res) {
-  let visavee = {};
-  User.findById(req.session.userId)
-    .exec((err, user) => {
-      reqUser = user;
-      visavee = User.findOne({ username: req.body.username })
-        .exec()
-        .then(user => {
-          return user;
-        });
-      return user;
-    })
+router.post("/getDialogueMessages", (req, res) => {
+  let visavee = User.findOne({ username: req.body.username })
+    .exec()
+    .then(visaveeObj => {
+      return visaveeObj;
+    });
+  let user = User.findOne({ _id: req.session.userId })
+    .exec()
     .then(user => {
-      if (user.contacts.indexOf(visavee._id) !== -1) {
-        Dialogue.findOne({
-          $or: [
-            {
-              $and: [
-                { userIDs: { first: visavee._id } },
-                { userIDs: { second: user._id } }
-              ]
-            },
-            {
-              $and: [
-                { userIDs: { first: user._id } },
-                { userIDs: { second: visavee._id } }
-              ]
-            }
-          ]
-        })
-          .exec()
-          .then(dialogue => {
+      return user;
+    });
+
+  Promise.all([visavee, user]).then(values => {
+    let user = values[1],
+      visavee = values[0];
+    if (user.contacts.indexOf(visavee._id) !== -1) {
+      Dialogue.findOne({
+        $or: [
+          {
+            $and: [
+              { userIDs: { first: visavee._id } },
+              { userIDs: { second: user._id } }
+            ]
+          },
+          {
+            $and: [
+              { userIDs: { first: user._id } },
+              { userIDs: { second: visavee._id } }
+            ]
+          }
+        ]
+      })
+        .exec()
+        .then(dialogue => {
+          if (!dialogue) {
+            let payload = {
+              sender: "System",
+              content: "No any messages. Write your first",
+              dateTime: new Date()
+            };
+            res.json({ messages: payload });
+            res.end();
+          } else {
             Promise.all(
-              dialogue.messages.map(function(message) {
-                let senderUserName = "";
-                message.senderID === user._id
-                  ? (senderUserName = user.username)
-                  : (senderUserName = visavee.username);
-                delete message.senderID;
-                message.sentBy = senderUserName;
+              dialogue.messages.map(message => {
+                let senderUserName =
+                  message.senderID === user._id ? "You" : visavee.username;
+                let payload = {
+                  sender: senderUserName,
+                  content: message.content,
+                  dateTime: message.dateTime
+                };
+                return payload;
               })
             ).then(result => {
               res.json(result);
             });
-          });
-      } else {
-        res.status(400);
-        res.end();
-      }
-    });
+          }
+        });
+    } else {
+      res.status(400);
+      res.end();
+    }
+  });
 });
 
-router.post("/postMessage", function(req, res) {
+router.post("/postMessage", (req, res) => {
   let visavee = {};
   User.findOne({ username: req.toUsername })
     .exec()
@@ -334,25 +341,49 @@ router.post("/postMessage", function(req, res) {
       })
         .exec()
         .then(dialogue => {
-          let message = {
-            senderID: req.session.userId,
-            content: req.message,
-            dateTime: Date(Date.now())
-          };
-          Dialogue.updateOne(
-            { _id: dialogue._id },
-            { $push: { messages: message } }
-          )
-            .exec()
-            .then(
-              res.json({
-                message: "sent success"
-              })
+          if (dialogue) {
+            let message = {
+              senderID: req.session.userId,
+              content: req.message,
+              dateTime: Date(Date.now())
+            };
+            Dialogue.updateOne(
+              { _id: dialogue._id },
+              { $push: { messages: message } }
             )
-            .catch(err => {
-              res.status(400);
-              res.end();
+              .exec()
+              .then(
+                res.json({
+                  message: "sent success"
+                })
+              )
+              .catch(err => {
+                res.status(400);
+                res.end();
+              });
+          } else {
+            let newDialogue = new Dialogue({
+              userIDs: {
+                first: req.session.userId,
+                second: visavee._id
+              },
+              messages: [
+                {
+                  senderID: 123,
+                  content: 321,
+                  dateTime: Date(Date.now())
+                }
+              ]
             });
+            newDialogue.save(err => {
+              if (err) {
+                res.status(400);
+                res.end();
+              } else {
+                res.json({ message: "sent success;" });
+              }
+            });
+          }
         })
     );
 });
