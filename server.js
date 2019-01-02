@@ -25,6 +25,7 @@ db.once("open", () => {
   console.log("we are connected to DB!");
 });
 
+//use sessions for tracking logins
 app.use(
   session({
     secret: "work hard",

@@ -268,16 +268,17 @@ router.post("/getDialogueMessages", (req, res) => {
       Dialogue.findOne({
         $or: [
           {
-            $and: [
-              { userIDs: { first: visavee._id } },
-              { userIDs: { second: user._id } }
-            ]
+            userIDs: {
+              first: visavee._id.toString(),
+              second: user._id.toString()
+            }
           },
+
           {
-            $and: [
-              { userIDs: { first: user._id } },
-              { userIDs: { second: visavee._id } }
-            ]
+            userIDs: {
+              first: user._id.toString(),
+              second: visavee._id.toString()
+            }
           }
         ]
       })
@@ -295,12 +296,13 @@ router.post("/getDialogueMessages", (req, res) => {
             Promise.all(
               dialogue.messages.map(message => {
                 let senderUserName =
-                  message.senderID === user._id ? "You" : visavee.username;
+                  message.senderID == user._id ? "You" : visavee.username;
                 let payload = {
                   sender: senderUserName,
                   content: message.content,
                   dateTime: message.dateTime
                 };
+                console.log(message);
                 return payload;
               })
             ).then(result => {
@@ -316,40 +318,42 @@ router.post("/getDialogueMessages", (req, res) => {
 });
 
 router.post("/postMessage", (req, res) => {
-  let visavee = {};
-  User.findOne({ username: req.toUsername })
+  User.findOne({ username: req.body.toUsername })
     .exec()
-    .then(user => {
-      visavee = user;
-    })
-    .then(
+
+    .then(visavee => {
       Dialogue.findOne({
         $or: [
           {
-            $and: [
-              { userIDs: { first: visavee._id } },
-              { userIDs: { second: req.session.userId } }
-            ]
+            userIDs: {
+              first: visavee._id.toString(),
+              second: req.session.userId.toString()
+            }
           },
+
           {
-            $and: [
-              { userIDs: { first: req.session.userId } },
-              { userIDs: { second: visavee._id } }
-            ]
+            userIDs: {
+              first: req.session.userId.toString(),
+              second: visavee._id.toString()
+            }
           }
         ]
       })
         .exec()
         .then(dialogue => {
+          console.log(dialogue);
           if (dialogue) {
-            let message = {
-              senderID: req.session.userId,
-              content: req.message,
-              dateTime: Date(Date.now())
-            };
             Dialogue.updateOne(
               { _id: dialogue._id },
-              { $push: { messages: message } }
+              {
+                $push: {
+                  messages: {
+                    senderID: req.session.userId,
+                    content: req.body.message,
+                    dateTime: Date(Date.now())
+                  }
+                }
+              }
             )
               .exec()
               .then(
@@ -358,6 +362,7 @@ router.post("/postMessage", (req, res) => {
                 })
               )
               .catch(err => {
+                console.log(err);
                 res.status(400);
                 res.end();
               });
@@ -369,8 +374,8 @@ router.post("/postMessage", (req, res) => {
               },
               messages: [
                 {
-                  senderID: 123,
-                  content: 321,
+                  content: req.body.message,
+                  senderID: req.session.userId,
                   dateTime: Date(Date.now())
                 }
               ]
@@ -385,7 +390,13 @@ router.post("/postMessage", (req, res) => {
             });
           }
         })
-    );
+        .catch(error => {
+          console.log(error);
+        });
+    })
+    .catch(error => {
+      console.log(error);
+    });
 });
 
 module.exports = router;

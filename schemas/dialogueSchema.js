@@ -8,7 +8,7 @@ let DialogueSchema = new mongoose.Schema({
   messages: [
     {
       senderID: { type: String, required: true },
-      content: { type: String, required: true, maxlength: 2200 },
+      content: { type: String, required: true },
       dateTime: Date,
       required: false
     }
