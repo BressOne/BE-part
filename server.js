@@ -6,6 +6,7 @@ let session = require("express-session");
 mongoose.connect("mongodb://localhost/chatDB");
 let db = mongoose.connection;
 let cors = require("cors");
+// let MongoStore = require("connect-mongostore");
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
@@ -31,6 +32,9 @@ app.use(
     secret: "work hard",
     resave: true,
     saveUninitialized: false
+    // store: new MongoStore({
+    //   mongooseConnection: db
+    // })
   })
 );
 

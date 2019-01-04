@@ -8,12 +8,16 @@ let Dialogue = require("../schemas/dialogueSchema.js");
 let cors = require("cors");
 router.use(bodyParser.urlencoded({ extended: true }));
 router.use(bodyParser.json());
+//let MongoStore = require("connect-mongostore")(express);
 
 router.use(
   session({
     secret: "work hard",
     resave: true,
     saveUninitialized: false
+    // store: new MongoStore({
+    //   mongooseConnection: db
+    // })
   })
 );
 
@@ -302,7 +306,7 @@ router.post("/getDialogueMessages", (req, res) => {
                   content: message.content,
                   dateTime: message.dateTime
                 };
-                console.log(message);
+
                 return payload;
               })
             ).then(result => {
@@ -341,7 +345,6 @@ router.post("/postMessage", (req, res) => {
       })
         .exec()
         .then(dialogue => {
-          console.log(dialogue);
           if (dialogue) {
             Dialogue.updateOne(
               { _id: dialogue._id },
@@ -350,7 +353,7 @@ router.post("/postMessage", (req, res) => {
                   messages: {
                     senderID: req.session.userId,
                     content: req.body.message,
-                    dateTime: Date(Date.now())
+                    dateTime: new Date()
                   }
                 }
               }
@@ -376,7 +379,7 @@ router.post("/postMessage", (req, res) => {
                 {
                   content: req.body.message,
                   senderID: req.session.userId,
-                  dateTime: Date(Date.now())
+                  dateTime: new Date()
                 }
               ]
             });
