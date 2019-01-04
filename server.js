@@ -1,12 +1,29 @@
 let express = require("express");
 let app = express();
+
 let bodyParser = require("body-parser");
+
 let mongoose = require("mongoose");
+
 let session = require("express-session");
 mongoose.connect("mongodb://localhost/chatDB");
 let db = mongoose.connection;
+
 let cors = require("cors");
-// let MongoStore = require("connect-mongostore");
+
+var MongoStore = require("connect-mongo")(session);
+
+app.use(
+  session({
+    secret: "work hard",
+    resave: true,
+    saveUninitialized: false,
+    store: new MongoStore({
+      mongooseConnection: db
+    })
+  })
+);
+
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
@@ -25,18 +42,6 @@ db.on("error", console.error.bind(console, "connection error:"));
 db.once("open", () => {
   console.log("we are connected to DB!");
 });
-
-//use sessions for tracking logins
-app.use(
-  session({
-    secret: "work hard",
-    resave: true,
-    saveUninitialized: false
-    // store: new MongoStore({
-    //   mongooseConnection: db
-    // })
-  })
-);
 
 const routes = require("./routes/router.js");
 app.use("/", routes);

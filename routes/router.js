@@ -1,42 +1,22 @@
-let bodyParser = require("body-parser");
 let emailValidate = require("../modules/emailvalidate.js");
-let session = require("express-session");
+
 let express = require("express");
+
 let router = express.Router();
+
 let User = require("../schemas/userSchema.js");
 let Dialogue = require("../schemas/dialogueSchema.js");
-let cors = require("cors");
+
+let bodyParser = require("body-parser");
 router.use(bodyParser.urlencoded({ extended: true }));
 router.use(bodyParser.json());
-//let MongoStore = require("connect-mongostore")(express);
-
-router.use(
-  session({
-    secret: "work hard",
-    resave: true,
-    saveUninitialized: false
-    // store: new MongoStore({
-    //   mongooseConnection: db
-    // })
-  })
-);
-
-let corsOptions = {
-  origin: true,
-  credentials: true,
-  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-  preflightContinue: true,
-  optionsSuccessStatus: 204
-};
-router.use(cors(corsOptions));
-
-router.options("*", cors(corsOptions));
 
 router.use((req, res, next) => {
   if (
     req.url === "/login" ||
     req.url === "/register" ||
-    req.method === "OPTIONS"
+    req.method === "OPTIONS" ||
+    req.url === "/handshake"
   ) {
     return next();
   } else {
@@ -100,6 +80,22 @@ router.post("/register", (req, res) => {
 
     res.json({ message: resultError });
   }
+});
+
+router.get("/handshake", (req, res) => {
+  console.log(req.session.userId);
+  User.findById(req.session.userId)
+    .exec()
+    .then(user => {
+      console.log(user);
+      if (user === null) {
+        res.json({ handshake: false });
+        return;
+      } else {
+        res.json({ handshake: true });
+      }
+      res.end();
+    });
 });
 
 router.post("/login", (req, res) => {
