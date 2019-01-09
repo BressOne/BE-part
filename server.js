@@ -32,7 +32,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
 let corsOptions = {
-  origin: "https://bressone.github.io/FE-part/",
+  origin: true,
   credentials: true,
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
   preflightContinue: true,
@@ -61,6 +61,6 @@ app.use((err, req, res, next) => {
   res.send(err.message);
 });
 
-app.listen(3000, () => {
-  console.log("Chat app listening on port 3000!");
+app.listen(process.env.PORT || 3000, () => {
+  console.log("Chat app listening on port " + process.env.PORT);
 });
