@@ -12,6 +12,9 @@ router.use(bodyParser.urlencoded({ extended: true }));
 router.use(bodyParser.json());
 
 router.use((req, res, next) => {
+  console.log(req.url);
+  console.log(req.options);
+  console.log(req.body);
   if (
     req.url === "/login" ||
     req.url === "/register" ||
