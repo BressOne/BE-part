@@ -6,7 +6,11 @@ let bodyParser = require("body-parser");
 let mongoose = require("mongoose");
 
 let session = require("express-session");
-mongoose.connect("mongodb://localhost/chatDB");
+mongoose.connect(
+  "mongodb://bress1992:Bress1992@ds253104.mlab.com:53104/heroku_9hwf61rm"
+);
+
+//mongoose.connect("mongodb://localhost/chatDB");
 let db = mongoose.connection;
 
 let cors = require("cors");
