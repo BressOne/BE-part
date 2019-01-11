@@ -10,42 +10,50 @@ mongoose.connect(
   "mongodb://bress1992:Bress1992@ds253104.mlab.com:53104/heroku_9hwf61rm"
 );
 
-//mongoose.connect("mongodb://localhost/chatDB");
+const http = require("http").Server(app);
+const io = require("socket.io")(http);
+
 let db = mongoose.connection;
-
-let cors = require("cors");
-
-var MongoStore = require("connect-mongo")(session);
-
-app.use(
-  session({
-    secret: "work hard",
-    resave: true,
-    saveUninitialized: false,
-    store: new MongoStore({
-      mongooseConnection: db
-    })
-  })
-);
-
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
-
-let corsOptions = {
-  origin: true,
-  credentials: true,
-  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-  preflightContinue: true,
-  optionsSuccessStatus: 204
-};
-app.use(cors(corsOptions));
-
-app.options("*", cors(corsOptions));
 
 db.on("error", console.error.bind(console, "connection error:"));
 db.once("open", () => {
   console.log("we are connected to DB!");
 });
+
+let MongoStore = require("connect-mongo")(session);
+
+let sessionMiddleware = session({
+  secret: "work hard",
+  resave: true,
+  saveUninitialized: false,
+  store: new MongoStore({
+    mongooseConnection: db
+  })
+});
+io.use(function(socket, next) {
+  sessionMiddleware(socket.request, socket.request.res, next);
+});
+
+app.use(sessionMiddleware);
+
+const SIOroutes = require("./routes/SIOrouter.js");
+app.use("/", SIOroutes);
+
+io.on("connection", function(socket) {
+  console.log("a user connected");
+  socket.on("disconnect", function() {
+    console.log("User Disconnected");
+  });
+  socket.on("message_emit_sent", function(msg) {
+    console.log("toUser: " + msg.toUsername);
+    console.log("message: " + msg.message);
+    console.log("cookie: " + socket.request.session.userId);
+  });
+});
+io.listen(8000);
+
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
 
 const routes = require("./routes/router.js");
 app.use("/", routes);

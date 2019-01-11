@@ -11,10 +11,21 @@ let bodyParser = require("body-parser");
 router.use(bodyParser.urlencoded({ extended: true }));
 router.use(bodyParser.json());
 
+let cors = require("cors");
+
+let corsOptions = {
+  origin: true,
+  credentials: true,
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+  preflightContinue: true,
+  optionsSuccessStatus: 204
+};
+router.use(cors(corsOptions));
+
+router.options("*", cors(corsOptions));
+
 router.use((req, res, next) => {
-  console.log(req.url);
-  console.log(req.options);
-  console.log(req.body);
+  // console.log(req.session);
   if (
     req.url === "/login" ||
     req.url === "/register" ||
