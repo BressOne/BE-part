@@ -24,7 +24,9 @@ let UserSchema = new mongoose.Schema({
   contacts: {
     type: Array,
     required: false
-  }
+  },
+  onlineStatus: {type: Boolean,
+    default: false}
 });
 
 UserSchema.methods.encryptPassword = function(password) {

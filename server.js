@@ -63,8 +63,16 @@ io.use(function(socket, next ) {
 
 io.on("connection", function(socket) {
   console.log("a user connected");
+  User.findOneAndUpdate(socket.request.session.userId, { $set: { onlineStatus: true}}, function (err) {
+    if (err) console.log(err)
+    
+  });
   socket.on("disconnect", function() {
     console.log("User Disconnected");
+    User.findOneAndUpdate(socket.request.session.userId, { $set: { onlineStatus: false}}, function (err) {
+      if (err) console.log(err)
+      
+    });
   });
   socket.on("message_emit_sent", function(msg) {
     console.log("toUser: " + msg.toUsername);

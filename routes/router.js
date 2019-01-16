@@ -248,7 +248,7 @@ router.get("/getContacts", (req, res) => {
       return User.findById(id)
         .exec()
         .then(user => {
-          return user.username;
+          return {name: user.username, onlineStatus: user.onlineStatus}
         })
         .catch(err => console.log(err));
     });
