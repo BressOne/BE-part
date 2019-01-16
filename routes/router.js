@@ -97,12 +97,10 @@ router.post("/register", (req, res) => {
 });
 
 router.get("/handshake", (req, res) => {
-  console.log(req.session.userId);
   User.findById(req.session.userId)
     .exec()
     .then(user => {
-      console.log(user);
-      if (user === null) {
+     if (user === null) {
         res.json({ handshake: false });
         return;
       } else {
@@ -330,86 +328,86 @@ router.post("/getDialogueMessages", (req, res) => {
     }
   });
 });
+// legacy non-socket messaging route
+// router.post("/postMessage", (req, res) => {
+//   User.findOne({ username: req.body.toUsername })
+//     .exec()
 
-router.post("/postMessage", (req, res) => {
-  User.findOne({ username: req.body.toUsername })
-    .exec()
+//     .then(visavee => {
+//       Dialogue.findOne({
+//         $or: [
+//           {
+//             userIDs: {
+//               first: visavee._id.toString(),
+//               second: req.session.userId.toString()
+//             }
+//           },
 
-    .then(visavee => {
-      Dialogue.findOne({
-        $or: [
-          {
-            userIDs: {
-              first: visavee._id.toString(),
-              second: req.session.userId.toString()
-            }
-          },
-
-          {
-            userIDs: {
-              first: req.session.userId.toString(),
-              second: visavee._id.toString()
-            }
-          }
-        ]
-      })
-        .exec()
-        .then(dialogue => {
-          if (dialogue) {
-            Dialogue.updateOne(
-              { _id: dialogue._id },
-              {
-                $push: {
-                  messages: {
-                    senderID: req.session.userId,
-                    content: req.body.message,
-                    dateTime: new Date()
-                  }
-                }
-              }
-            )
-              .exec()
-              .then(
-                res.json({
-                  message: "sent success"
-                })
-              )
-              .catch(err => {
-                console.log(err);
-                res.status(400);
-                res.end();
-              });
-          } else {
-            let newDialogue = new Dialogue({
-              userIDs: {
-                first: req.session.userId,
-                second: visavee._id
-              },
-              messages: [
-                {
-                  content: req.body.message,
-                  senderID: req.session.userId,
-                  dateTime: new Date()
-                }
-              ]
-            });
-            newDialogue.save(err => {
-              if (err) {
-                res.status(400);
-                res.end();
-              } else {
-                res.json({ message: "sent success;" });
-              }
-            });
-          }
-        })
-        .catch(error => {
-          console.log(error);
-        });
-    })
-    .catch(error => {
-      console.log(error);
-    });
-});
+//           {
+//             userIDs: {
+//               first: req.session.userId.toString(),
+//               second: visavee._id.toString()
+//             }
+//           }
+//         ]
+//       })
+//         .exec()
+//         .then(dialogue => {
+//           if (dialogue) {
+//             Dialogue.updateOne(
+//               { _id: dialogue._id },
+//               {
+//                 $push: {
+//                   messages: {
+//                     senderID: req.session.userId,
+//                     content: req.body.message,
+//                     dateTime: new Date()
+//                   }
+//                 }
+//               }
+//             )
+//               .exec()
+//               .then(
+//                 res.json({
+//                   message: "sent success"
+//                 })
+//               )
+//               .catch(err => {
+//                 console.log(err);
+//                 res.status(400);
+//                 res.end();
+//               });
+//           } else {
+//             let newDialogue = new Dialogue({
+//               userIDs: {
+//                 first: req.session.userId,
+//                 second: visavee._id
+//               },
+//               messages: [
+//                 {
+//                   content: req.body.message,
+//                   senderID: req.session.userId,
+//                   dateTime: new Date()
+//                 }
+//               ]
+//             });
+//             newDialogue.save(err => {
+//               if (err) {
+//                 res.status(400);
+//                 res.end();
+//               } else {
+//                 res.json({ message: "sent success;" });
+//               }
+//             });
+//           }
+//         })
+//         .catch(error => {
+//           console.log(error);
+//         });
+//     })
+//     .catch(error => {
+//       console.log(error);
+//     });
+// });
 
 module.exports = router;
