@@ -183,7 +183,7 @@ app.use((err, req, res, next) => {
   res.send(err.message);
 });
 
-//app.listen(process.env.PORT || 3000, () => {
-app.listen(3000, () => {
+app.listen(process.env.PORT || 3000, () => {
+//app.listen(3000, () => {
   console.log("Chat app listening on port " + process.env.PORT);
 });
