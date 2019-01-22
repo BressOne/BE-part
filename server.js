@@ -164,7 +164,12 @@ io.on("connection", function(socket) {
   });
 });
 
+<<<<<<< HEAD
 io.listen(process.env.PORT || 8000);
+=======
+io.listen(process.env.PORT || 8000, () => {console.log("SIO listening on port " + process.env.PORT || 8000)});
+
+>>>>>>> d0453a6c80fd4b6cc7ca53f2171ad3ec5c2ffe39
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
@@ -184,6 +189,11 @@ app.use((err, req, res, next) => {
 });
 
 app.listen(process.env.PORT || 3000, () => {
+<<<<<<< HEAD
   //app.listen(3000, () => {
   console.log("Chat app listening on port " + process.env.PORT);
+=======
+//app.listen(3000, () => {
+  console.log("Chat app listening on port " + process.env.PORT || 3000);
+>>>>>>> d0453a6c80fd4b6cc7ca53f2171ad3ec5c2ffe39
 });
