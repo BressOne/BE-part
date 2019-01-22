@@ -164,7 +164,7 @@ io.on("connection", function(socket) {
   });
 });
 
-io.listen(8000);
+io.listen(process.env.PORT || 8000);
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
@@ -184,6 +184,6 @@ app.use((err, req, res, next) => {
 });
 
 app.listen(process.env.PORT || 3000, () => {
-//app.listen(3000, () => {
+  //app.listen(3000, () => {
   console.log("Chat app listening on port " + process.env.PORT);
 });
