@@ -1,31 +1,13 @@
-let emailValidate = require("../modules/emailvalidate.js");
-
-let express = require("express");
-
-let router = express.Router();
-
-let User = require("../schemas/userSchema.js");
-let Dialogue = require("../schemas/dialogueSchema.js");
-
-let bodyParser = require("body-parser");
+const express = require("express");
+const router = express.Router();
+const User = require("../schemas/userSchema.js");
+const Dialogue = require("../schemas/dialogueSchema.js");
+const bodyParser = require("body-parser");
+const emailValidate = require("../modules/emailvalidate.js");
 router.use(bodyParser.urlencoded({ extended: true }));
 router.use(bodyParser.json());
 
-let cors = require("cors");
-
-let corsOptions = {
-  origin: true,
-  credentials: true,
-  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-  preflightContinue: true,
-  optionsSuccessStatus: 204
-};
-router.use(cors(corsOptions));
-
-router.options("*", cors(corsOptions));
-
 router.use((req, res, next) => {
-  // console.log(req.session);
   if (
     req.url === "/login" ||
     req.url === "/register" ||
@@ -47,6 +29,50 @@ router.use((req, res, next) => {
         } else {
           return next();
         }
+      }
+    });
+  }
+});
+
+router.get("/handshake", (req, res) => {
+  User.findById(req.session.userId)
+    .exec()
+    .then(user => {
+      if (user === null) {
+        res.json({ handshake: false });
+        return;
+      } else {
+        res.json({ handshake: true });
+      }
+      res.end();
+    });
+});
+
+router.post("/login", (req, res) => {
+  let postedForm = req.body;
+  User.authenticate(postedForm.username, postedForm.password, (error, user) => {
+    if (error || !user) {
+      res.status(400).json({
+        message: "Wrong username or pass.",
+        loginPermission: false
+      });
+    } else {
+      req.session.userId = user._id;
+      res.status(200).json({
+        message: "Access granted",
+        loginPermission: true
+      });
+    }
+  });
+});
+
+router.get("/logout", (req, res, next) => {
+  if (req.session) {
+    req.session.destroy(err => {
+      if (err) {
+        return next(err);
+      } else {
+        return res.json("loggedOut");
       }
     });
   }
@@ -95,41 +121,9 @@ router.post("/register", (req, res) => {
     res.json({ message: resultError });
   }
 });
-
-router.get("/handshake", (req, res) => {
-  User.findById(req.session.userId)
-    .exec()
-    .then(user => {
-      if (user === null) {
-        res.json({ handshake: false });
-        return;
-      } else {
-        res.json({ handshake: true });
-      }
-      res.end();
-    });
-});
-
-router.post("/login", (req, res) => {
-  let postedForm = req.body;
-  User.authenticate(postedForm.username, postedForm.password, (error, user) => {
-    if (error || !user) {
-      res.status(200).json({
-        message: "Wrong username or pass.",
-        loginPermission: false
-      });
-    } else {
-      req.session.userId = user._id;
-      res.status(200).json({
-        message: "Access granted",
-        loginPermission: true
-      });
-    }
-  });
-});
-
-router.post("/search_person", (req, res) => {
-  const pattern = req.body.searchValue;
+//search for person
+router.get("/persons/:name", (req, res) => {
+  const pattern = req.params.name;
   User.find(
     { username: { $regex: `${pattern}`, $options: "i" } },
     (err, users) => {
@@ -148,25 +142,13 @@ router.post("/search_person", (req, res) => {
     }
   );
 });
-
-router.get("/logout", (req, res, next) => {
-  if (req.session) {
-    req.session.destroy(err => {
-      if (err) {
-        return next(err);
-      } else {
-        return res.json("loggedOut");
-      }
-    });
-  }
-});
-
-router.post("/addContact", (req, res, next) => {
+//add contact
+router.post("/contacts/:name", (req, res) => {
   let newContactID = "",
     currentContactList = "";
 
   Promise.all([
-    User.findOne({ username: req.body.username })
+    User.findOne({ username: req.params.name })
       .then(user => {
         return user._id;
       })
@@ -206,14 +188,14 @@ router.post("/addContact", (req, res, next) => {
     }
   });
 });
-
-router.delete("/deleteContact", (req, res, next) => {
+//delete contact
+router.delete("/contacts/:name", (req, res) => {
   User.findById(req.session.userId)
     .exec()
     .then(user => {
       let contacts = user.contacts;
       let deleteUser = "";
-      User.findOne({ username: req.body.username })
+      User.findOne({ username: req.params.name })
         .exec()
         .then(user => {
           deleteUser = user;
@@ -241,8 +223,8 @@ router.delete("/deleteContact", (req, res, next) => {
       console.log(err);
     });
 });
-
-router.get("/getContacts", (req, res) => {
+//get contact list
+router.get("/contacts", (req, res) => {
   User.findById(req.session.userId).exec((err, user) => {
     let promiseArray = user.contacts.map(id => {
       return User.findById(id)
@@ -260,9 +242,9 @@ router.get("/getContacts", (req, res) => {
       .catch(err => consolelog(err));
   });
 });
-
-router.post("/getDialogueMessages", (req, res) => {
-  let visavee = User.findOne({ username: req.body.username })
+//get contact messages list
+router.get("/contacts/:name/messages/", (req, res) => {
+  let visavee = User.findOne({ username: req.params.name })
     .exec()
     .then(visaveeObj => {
       return visaveeObj;
@@ -328,86 +310,5 @@ router.post("/getDialogueMessages", (req, res) => {
     }
   });
 });
-// legacy non-socket messaging route
-// router.post("/postMessage", (req, res) => {
-//   User.findOne({ username: req.body.toUsername })
-//     .exec()
-
-//     .then(visavee => {
-//       Dialogue.findOne({
-//         $or: [
-//           {
-//             userIDs: {
-//               first: visavee._id.toString(),
-//               second: req.session.userId.toString()
-//             }
-//           },
-
-//           {
-//             userIDs: {
-//               first: req.session.userId.toString(),
-//               second: visavee._id.toString()
-//             }
-//           }
-//         ]
-//       })
-//         .exec()
-//         .then(dialogue => {
-//           if (dialogue) {
-//             Dialogue.updateOne(
-//               { _id: dialogue._id },
-//               {
-//                 $push: {
-//                   messages: {
-//                     senderID: req.session.userId,
-//                     content: req.body.message,
-//                     dateTime: new Date()
-//                   }
-//                 }
-//               }
-//             )
-//               .exec()
-//               .then(
-//                 res.json({
-//                   message: "sent success"
-//                 })
-//               )
-//               .catch(err => {
-//                 console.log(err);
-//                 res.status(400);
-//                 res.end();
-//               });
-//           } else {
-//             let newDialogue = new Dialogue({
-//               userIDs: {
-//                 first: req.session.userId,
-//                 second: visavee._id
-//               },
-//               messages: [
-//                 {
-//                   content: req.body.message,
-//                   senderID: req.session.userId,
-//                   dateTime: new Date()
-//                 }
-//               ]
-//             });
-//             newDialogue.save(err => {
-//               if (err) {
-//                 res.status(400);
-//                 res.end();
-//               } else {
-//                 res.json({ message: "sent success;" });
-//               }
-//             });
-//           }
-//         })
-//         .catch(error => {
-//           console.log(error);
-//         });
-//     })
-//     .catch(error => {
-//       console.log(error);
-//     });
-// });
 
 module.exports = router;

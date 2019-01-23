@@ -1,18 +1,32 @@
-let express = require("express");
-let app = express();
+const express = require("express");
+const mongoose = require("mongoose");
+const session = require("express-session");
+const httpModule = require("http");
+const sockets = require("socket.io");
+const connectMongo = require("connect-mongo");
+const cors = require("cors");
 
-let bodyParser = require("body-parser");
+const routes = require("./routes/router.js");
 
-let mongoose = require("mongoose");
+const app = express();
 
-let session = require("express-session");
+const http = httpModule.Server(app);
+const io = sockets(http);
+
+const corsOptions = {
+  origin: true,
+  credentials: true,
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+  preflightContinue: true,
+  optionsSuccessStatus: 204
+};
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
+
 mongoose.connect(
   "mongodb://bress1992:Bress1992@ds253104.mlab.com:53104/heroku_9hwf61rm",
   { useNewUrlParser: true }
 );
-
-const http = require("http").Server(app);
-const io = require("socket.io")(http);
 
 let db = mongoose.connection;
 
@@ -21,7 +35,7 @@ db.once("open", () => {
   console.log("we are connected to DB!");
 });
 
-let MongoStore = require("connect-mongo")(session);
+let MongoStore = connectMongo(session);
 
 let sessionMiddleware = session({
   secret: "work hard for Warudo!",
@@ -31,11 +45,13 @@ let sessionMiddleware = session({
     mongooseConnection: db
   })
 });
+
 io.use(function(socket, next) {
   sessionMiddleware(socket.request, socket.request.res, next);
 });
 
 app.use(sessionMiddleware);
+
 let Dialogue = require("./schemas/dialogueSchema.js");
 let User = require("./schemas/userSchema.js");
 
@@ -62,7 +78,6 @@ io.use(function(socket, next) {
 });
 
 io.on("connection", function(socket) {
-  console.log("a user connected");
   User.findOneAndUpdate(
     socket.request.session.userId,
     { $set: { onlineStatus: true } },
@@ -71,7 +86,6 @@ io.on("connection", function(socket) {
     }
   );
   socket.on("disconnect", function() {
-    console.log("User Disconnected");
     User.findOneAndUpdate(
       socket.request.session.userId,
       { $set: { onlineStatus: false } },
@@ -85,7 +99,7 @@ io.on("connection", function(socket) {
       acceptorID = msg.toUsername,
       message = msg.message,
       dateTime = {};
-    console.log(senderID);
+
     User.findOne({ username: msg.toUsername })
       .exec()
 
@@ -124,7 +138,7 @@ io.on("connection", function(socket) {
                 }
               )
                 .exec()
-                .then(console.log("sent"))
+
                 .catch(err => {
                   console.log(err);
                 });
@@ -146,7 +160,6 @@ io.on("connection", function(socket) {
                 if (err) {
                   console.log(err);
                 } else {
-                  console.log("sent");
                 }
               });
             }
@@ -164,14 +177,6 @@ io.on("connection", function(socket) {
   });
 });
 
-io.listen(process.env.PORT || 8000, () => {
-  console.log("SIO listening on port " + process.env.PORT || 8000);
-});
-
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
-
-const routes = require("./routes/router.js");
 app.use("/", routes);
 
 app.use((req, res, next) => {
@@ -185,7 +190,8 @@ app.use((err, req, res, next) => {
   res.send(err.message);
 });
 
+io.listen(process.env.PORT || 8000);
+
 app.listen(process.env.PORT || 3000, () => {
-  //app.listen(3000, () => {
-  console.log("Chat app listening on port " + process.env.PORT || 3000);
+  console.log("Chat app listening on port " + (process.env.PORT || 3000));
 });
